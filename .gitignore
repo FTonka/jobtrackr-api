@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.csproj.user
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+*.egg-info/
+
+# Docker
+.dockerignore
+
+# IDE
+.idea/
+*.swp
+
+# Secrets
+appsettings.Development.json

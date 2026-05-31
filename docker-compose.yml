@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "JobTrackr@2024!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'JobTrackr@2024!' -Q 'SELECT 1' -No"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # MongoDB
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # JobTrackr API
+  api:
+    build:
+      context: .
+      dockerfile: JobTrackr.API/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=JobTrackrDb;User Id=sa;Password=JobTrackr@2024!;TrustServerCertificate=True
+      - ConnectionStrings__Redis=redis:6379
+      - MongoDbSettings__ConnectionString=mongodb://mongodb:27017
+      - MongoDbSettings__DatabaseName=JobTrackrNotes
+      - JwtSettings__SecretKey=JobTrackrSuperSecretKey2024!XyZ@#$%
+      - JwtSettings__Issuer=JobTrackr.API
+      - JwtSettings__Audience=JobTrackr.Client
+      - JwtSettings__ExpiryInDays=7
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Python Scraper
+  scraper:
+    build:
+      context: ./JobTrackr.Scraper
+      dockerfile: Dockerfile
+    environment:
+      - API_BASE_URL=http://api:8080
+      - API_EMAIL=test@test.com
+      - API_PASSWORD=Test123!
+      - SCRAPE_INTERVAL_MINUTES=60
+    depends_on:
+      - api
+
+volumes:
+  sqlserver_data:
+  mongo_data:
+  redis_data:
