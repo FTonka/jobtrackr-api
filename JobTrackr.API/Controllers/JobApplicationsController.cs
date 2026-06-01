@@ -1,5 +1,6 @@
 ﻿using JobTrackr.Application.DTOs;
 using JobTrackr.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -8,6 +9,7 @@ namespace JobTrackr.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class JobApplicationsController : ControllerBase
     {
         private readonly IJobApplicationService _service;

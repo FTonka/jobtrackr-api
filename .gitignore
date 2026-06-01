@@ -22,3 +22,5 @@ venv/
 
 # Secrets
 appsettings.Development.json
+api.out.log
+api.err.log

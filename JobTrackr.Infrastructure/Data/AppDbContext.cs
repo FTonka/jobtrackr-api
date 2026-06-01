@@ -33,6 +33,8 @@ namespace JobTrackr.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.CompanyName).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Position).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.SalaryMin).HasPrecision(18, 2);
+                entity.Property(e => e.SalaryMax).HasPrecision(18, 2);
                 entity.Property(e => e.Status)
                       .HasConversion<string>();
 
