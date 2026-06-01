@@ -5,6 +5,7 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
+      MSSQL_SA_PASSWORD: "JobTrackr@2024!"
       SA_PASSWORD: "JobTrackr@2024!"
       ACCEPT_EULA: "Y"
     ports:
@@ -12,7 +13,7 @@ services:
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'JobTrackr@2024!' -Q 'SELECT 1' -No"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'JobTrackr@2024!' -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'JobTrackr@2024!' -Q 'SELECT 1'"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -22,7 +23,7 @@ services:
   mongodb:
     image: mongo:7.0
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
@@ -53,7 +54,7 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=JobTrackrDb;User Id=sa;Password=JobTrackr@2024!;TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=JobTrackrDb;User Id=sa;Password=JobTrackr@2024!;TrustServerCertificate=True;Encrypt=False
       - ConnectionStrings__Redis=redis:6379
       - MongoDbSettings__ConnectionString=mongodb://mongodb:27017
       - MongoDbSettings__DatabaseName=JobTrackrNotes

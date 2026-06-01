@@ -1,4 +1,4 @@
-using JobTrackr.Application.Interfaces;
+ï»¿using JobTrackr.Application.Interfaces;
 using JobTrackr.Application.Services;
 using JobTrackr.Domain.Interfaces;
 using JobTrackr.Infrastructure.Data;
@@ -12,9 +12,15 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure()));
 // Redis Cache
 builder.Services.AddStackExchangeRedisCache(options =>
 {
@@ -23,10 +29,10 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 
-// Repository'ler
+// Repositories
 builder.Services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-// Service'ler
+// Services
 builder.Services.AddScoped<IJobApplicationService, JobApplicationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<MongoDbContext>();
@@ -58,13 +64,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Swagger JWT desteði
+// Swagger JWT support
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "JobTrackr API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header. Örnek: 'Bearer {token}'",
+        Description = "JWT Authorization header. Example: 'Bearer {token}'",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -88,9 +94,23 @@ builder.Services.AddSwaggerGen(c =>
 
 
 builder.Services.AddControllers();
+builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("JobTrackrClient", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:8080",
+                "http://127.0.0.1:8080")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -101,12 +121,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors("JobTrackrClient");
+app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
-// Migration otomatik uygula
+// Apply migrations on startup.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -114,3 +140,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
