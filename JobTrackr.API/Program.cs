@@ -24,8 +24,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Redis Cache
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "JobTrackr:";
+    builder.Services.AddDistributedMemoryCache();
 });
 
 
