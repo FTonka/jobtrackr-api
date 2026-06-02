@@ -21,11 +21,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlOptions => sqlOptions.EnableRetryOnFailure()));
-// Redis Cache
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    builder.Services.AddDistributedMemoryCache();
-});
+
+builder.Services.AddDistributedMemoryCache();
 
 
 // Repositories
